@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>User Panel</title>
+<style>
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, Roboto, Inter, sans-serif;
+    background: #0d0d0f;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+  }
+  .container {
+    width: 100%;
+    max-width: 400px;
+    padding: 20px;
+    text-align: center;
+  }
+  .avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin: 0 auto 15px;
+  }
+  .avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .name { font-size: 1.5em; font-weight: bold; margin-top: 10px; }
+  .bio { color: #ccc; margin-bottom: 25px; }
+  .link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #eee;
+    color: #111;
+    padding: 14px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .link img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="avatar"><img id="avatar" src="" alt="Profile"></div>
+  <div class="name" id="name">Loading...</div>
+  <div class="bio" id="bio"></div>
+  <div id="links"></div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
+  import { getDatabase, ref, get, child } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyB6S12pE6M9LbWJC0-wX9dJAboGZ2cYmy0",
+    authDomain: "skillforgex-6aaa1.firebaseapp.com",
+    databaseURL: "https://skillforgex-6aaa1-default-rtdb.firebaseio.com",
+    projectId: "skillforgex-6aaa1",
+    storageBucket: "skillforgex-6aaa1.firebasestorage.app",
+    messagingSenderId: "817642126335",
+    appId: "1:817642126335:web:388f34f7d2e1a0432a85ca",
+    measurementId: "G-CDK62W0PW1"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  async function loadData() {
+    try {
+      const dbRef = ref(db);
+      const snapshot = await get(child(dbRef, '/'));
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+
+        document.getElementById("avatar").src = data.profile?.avatar || '';
+        document.getElementById("name").textContent = data.profile?.name || 'No name set';
+        document.getElementById("bio").textContent = data.profile?.bio || '';
+
+        const linksDiv = document.getElementById("links");
+        linksDiv.innerHTML = '';
+        if (Array.isArray(data.links)) {
+          data.links.forEach(link => {
+            const a = document.createElement('a');
+            a.href = link.url;
+            a.target = '_blank';
+            a.className = 'link';
+            a.innerHTML = `${link.icon ? `<img src="${link.icon}">` : ''}${link.title}`;
+            linksDiv.appendChild(a);
+          });
+        }
+      } else {
+        document.getElementById("name").textContent = 'No data yet';
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+  loadData();
+</script>
+</body>
+</html>
