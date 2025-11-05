@@ -1,69 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="https://3nbf4.com/act/files/tag.min.js?z=10145222" data-cfasync="false" async></script>
-  <script>(function(s){s.dataset.zone='10145229',s.src='https://forfrogadiertor.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>User Panel</title>
+<title>User Links</title>
 <style>
-  body {
-    margin: 0;
-    font-family: system-ui, -apple-system, Roboto, Inter, sans-serif;
-    background: #0d0d0f;
-    color: #fff;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
+  :root{--maxw:420px}
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,Inter,Roboto,Arial,sans-serif;
+    background:#0e0f12;
+    color:#fff;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px 14px;
   }
-  .container {
-    width: 100%;
-    max-width: 400px;
-    padding: 20px;
-    text-align: center;
+  .wrap{width:100%;max-width:var(--maxw);text-align:center}
+  .avatar{width:120px;height:120px;border-radius:50%;overflow:hidden;margin:0 auto 10px;border:2px solid #ffffff22}
+  .avatar img{width:100%;height:100%;object-fit:cover}
+  .name{font-weight:700;font-size:1.5rem}
+  .bio{color:#cfd3da;margin-bottom:18px}
+  .links{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+  .link{
+    display:flex;align-items:center;gap:10px;text-decoration:none;background:#eee;color:#111;
+    padding:14px;border-radius:14px;font-weight:700;border:1px solid #00000010
   }
-  .avatar {
-    width: 120px;
-    height: 120px;
-    border-radius: 50%;
-    overflow: hidden;
-    margin: 0 auto 15px;
+  .link:active{transform:translateY(1px)}
+  .icon{
+    width:32px;height:32px;border-radius:50%;overflow:hidden;flex-shrink:0;
+    background:#fff;display:grid;place-items:center;border:1px solid #00000014;
   }
-  .avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .name { font-size: 1.5em; font-weight: bold; margin-top: 10px; }
-  .bio { color: #ccc; margin-bottom: 25px; }
-  .link {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: #eee;
-    color: #111;
-    padding: 14px;
-    border-radius: 12px;
-    margin-bottom: 10px;
-    text-decoration: none;
-    font-weight: 600;
-  }
-  .link img {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    object-fit: cover;
-  }
+  .icon img{width:100%;height:100%;object-fit:cover}
+  .foot{margin-top:20px;opacity:.7}
 </style>
 </head>
 <body>
-<div class="container">
-  <div class="avatar"><img id="avatar" src="" alt="Profile"></div>
-  <div class="name" id="name">Loading...</div>
+<main class="wrap">
+  <div class="avatar"><img id="avatar" alt=""></div>
+  <div class="name" id="name">Loading…</div>
   <div class="bio" id="bio"></div>
-  <div id="links"></div>
-</div>
+  <div id="links" class="links" aria-label="Links"></div>
+  <div class="foot"><a href="admin.html" style="color:#cfcac6">Admin</a></div>
+</main>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js";
@@ -83,34 +64,56 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  async function loadData() {
-    try {
-      const dbRef = ref(db);
-      const snapshot = await get(child(dbRef, '/'));
-      if (snapshot.exists()) {
-        const data = snapshot.val();
+  const isAbsolute = (u)=>/^(https?:|mailto:|tel:)/i.test(u);
+  const normalize = (u)=>{
+    if(!u) return "#";
+    u = u.trim();
+    return isAbsolute(u) ? u : "https://" + u.replace(/^\/+/, "");
+  };
 
-        document.getElementById("avatar").src = data.profile?.avatar || '';
-        document.getElementById("name").textContent = data.profile?.name || 'No name set';
-        document.getElementById("bio").textContent = data.profile?.bio || '';
+  async function loadData(){
+    try{
+      const snap = await get(child(ref(db), "/"));
+      const data = snap.exists() ? snap.val() : {};
+      const profile = data.profile || {};
+      const links = Array.isArray(data.links) ? data.links : [];
 
-        const linksDiv = document.getElementById("links");
-        linksDiv.innerHTML = '';
-        if (Array.isArray(data.links)) {
-          data.links.forEach(link => {
-            const a = document.createElement('a');
-            a.href = link.url;
-            a.target = '_blank';
-            a.className = 'link';
-            a.innerHTML = `${link.icon ? `<img src="${link.icon}">` : ''}${link.title}`;
-            linksDiv.appendChild(a);
-          });
+      document.getElementById("avatar").src = profile.avatar || "";
+      document.getElementById("name").textContent = profile.name || "No name";
+      document.getElementById("bio").textContent = profile.bio || "";
+
+      const list = document.getElementById("links");
+      list.innerHTML = "";
+      links.forEach(item=>{
+        const linkUrl = normalize(item.url);
+        const a = document.createElement("a");
+        a.className = "link";
+        a.href = linkUrl;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+
+        // icon
+        const ic = document.createElement("div");
+        ic.className = "icon";
+        if(item.icon && item.icon.startsWith("data:image")){
+          const img = document.createElement("img");
+          img.src = item.icon;
+          img.alt = "";
+          ic.appendChild(img);
+        } else {
+          ic.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#ccc"/></svg>';
         }
-      } else {
-        document.getElementById("name").textContent = 'No data yet';
-      }
-    } catch (err) {
+
+        const title = document.createElement("span");
+        title.textContent = item.title || "Untitled";
+
+        a.appendChild(ic);
+        a.appendChild(title);
+        list.appendChild(a);
+      });
+    }catch(err){
       console.error(err);
+      document.getElementById("name").textContent = "Error loading data";
     }
   }
   loadData();
